@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>插件测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #fff;
+        }
+        
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .test-section h2 {
+            margin-top: 0;
+            color: #ffd700;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+        }
+        
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        label {
+            display: block;
+            margin: 15px 0 5px 0;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        .form-group {
+            margin: 20px 0;
+        }
+        
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .special-button {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+        }
+        
+        .danger-button {
+            background: linear-gradient(45deg, #ff4757, #c44569);
+        }
+        
+        .success-button {
+            background: linear-gradient(45deg, #2ed573, #1e90ff);
+        }
+        
+        .info-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #ffd700;
+        }
+        
+        .info-box h3 {
+            margin-top: 0;
+            color: #ffd700;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI浏览器自动化助手 - 测试页面</h1>
+        
+        <div class="info-box">
+            <h3>📋 测试说明</h3>
+            <p>请按照以下步骤测试插件功能：</p>
+            <ol>
+                <li>安装并启用AI浏览器自动化助手插件</li>
+                <li>打开插件的侧边栏</li>
+                <li>点击"开启学习模式"按钮</li>
+                <li>在下方进行各种操作（点击、输入、选择等）</li>
+                <li>观察侧边栏中的记录表格</li>
+                <li>点击"结束学习模式"查看结果</li>
+            </ol>
+        </div>
+        
+        <div class="test-section">
+            <h2>🎯 点击测试</h2>
+            <p>测试各种按钮的点击事件记录：</p>
+            
+            <div class="button-group">
+                <button id="test-button-1" class="special-button">测试按钮 1</button>
+                <button id="test-button-2" class="danger-button">测试按钮 2</button>
+                <button id="test-button-3" class="success-button">测试按钮 3</button>
+                <button class="normal-button">普通按钮</button>
+            </div>
+            
+            <div class="button-group">
+                <button class="special-button">特殊按钮 A</button>
+                <button class="danger-button">危险按钮 B</button>
+                <button class="success-button">成功按钮 C</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📝 输入测试</h2>
+            <p>测试各种输入框的输入事件记录：</p>
+            
+            <div class="form-group">
+                <label for="username">用户名：</label>
+                <input type="text" id="username" placeholder="请输入用户名" />
+            </div>
+            
+            <div class="form-group">
+                <label for="email">邮箱：</label>
+                <input type="email" id="email" placeholder="请输入邮箱地址" />
+            </div>
+            
+            <div class="form-group">
+                <label for="password">密码：</label>
+                <input type="password" id="password" placeholder="请输入密码" />
+            </div>
+            
+            <div class="form-group">
+                <label for="message">留言：</label>
+                <textarea id="message" rows="4" placeholder="请输入留言内容"></textarea>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📋 选择测试</h2>
+            <p>测试下拉选择框的选择事件记录：</p>
+            
+            <div class="form-group">
+                <label for="country">国家：</label>
+                <select id="country">
+                    <option value="">请选择国家</option>
+                    <option value="china">中国</option>
+                    <option value="usa">美国</option>
+                    <option value="japan">日本</option>
+                    <option value="uk">英国</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="city">城市：</label>
+                <select id="city">
+                    <option value="">请选择城市</option>
+                    <option value="beijing">北京</option>
+                    <option value="shanghai">上海</option>
+                    <option value="guangzhou">广州</option>
+                    <option value="shenzhen">深圳</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="category">分类：</label>
+                <select id="category">
+                    <option value="">请选择分类</option>
+                    <option value="tech">科技</option>
+                    <option value="news">新闻</option>
+                    <option value="sports">体育</option>
+                    <option value="entertainment">娱乐</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📤 表单提交测试</h2>
+            <p>测试表单提交事件记录：</p>
+            
+            <form id="test-form">
+                <div class="form-group">
+                    <label for="form-name">姓名：</label>
+                    <input type="text" id="form-name" name="name" placeholder="请输入姓名" />
+                </div>
+                
+                <div class="form-group">
+                    <label for="form-email">邮箱：</label>
+                    <input type="email" id="form-email" name="email" placeholder="请输入邮箱" />
+                </div>
+                
+                <div class="form-group">
+                    <label for="form-message">消息：</label>
+                    <textarea id="form-message" name="message" rows="3" placeholder="请输入消息"></textarea>
+                </div>
+                
+                <button type="submit" class="success-button">提交表单</button>
+            </form>
+        </div>
+        
+        <div class="info-box">
+            <h3>🔍 验证要点</h3>
+            <ul>
+                <li>✅ 每次点击都应该在侧边栏表格中显示记录</li>
+                <li>✅ 记录应包含操作类型、描述、XPath、Selector和时间</li>
+                <li>✅ XPath格式应类似：//button[@id="test-button-1"]</li>
+                <li>✅ Selector格式应类似：#test-button-1 或 .special-button</li>
+                <li>✅ 输入操作应记录输入的内容</li>
+                <li>✅ 选择操作应记录选择的值</li>
+                <li>✅ 表单提交应记录表单信息</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // 表单提交处理
+        document.getElementById('test-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('表单提交成功！请检查侧边栏的记录。');
+        });
+        
+        // 按钮点击反馈
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                if (e.target.type !== 'submit') {
+                    console.log('按钮被点击:', e.target.textContent);
+                }
+            });
+        });
+        
+        // 输入框变化反馈
+        document.querySelectorAll('input, textarea, select').forEach(input => {
+            input.addEventListener('change', function(e) {
+                console.log('输入变化:', e.target.value);
+            });
+        });
+    </script>
+</body>
+</html> 

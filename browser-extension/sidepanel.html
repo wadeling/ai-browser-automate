@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI浏览器自动化助手</title>
+    <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI助手</h1>
+            <p>智能浏览器操作自动化</p>
+        </div>
+        
+        <div class="button-container">
+            <button id="startLearning" class="action-btn start-btn">
+                <span class="btn-icon">🎯</span>
+                <span class="btn-text">开启学习模式</span>
+            </button>
+            
+            <button id="stopLearning" class="action-btn stop-btn" disabled>
+                <span class="btn-icon">⏹️</span>
+                <span class="btn-text">结束学习模式</span>
+            </button>
+        </div>
+        
+        <div class="status-container">
+            <div id="status" class="status-indicator">
+                <span class="status-icon">⏸️</span>
+                <span class="status-text">等待开始学习...</span>
+            </div>
+        </div>
+        
+        <!-- 记录表格 -->
+        <div class="records-container">
+            <h3>📊 学习记录</h3>
+            <div class="table-wrapper">
+                <table id="recordsTable" class="records-table">
+                    <thead>
+                        <tr>
+                            <th>序号</th>
+                            <th>操作类型</th>
+                            <th>描述</th>
+                            <th>XPath</th>
+                            <th>Selector</th>
+                            <th>时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsTableBody">
+                        <!-- 记录数据将在这里动态添加 -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="table-actions">
+                <button id="clearRecords" class="clear-btn">🗑️ 清空记录</button>
+                <button id="exportRecords" class="export-btn">📤 导出数据</button>
+            </div>
+        </div>
+        
+        <div class="info-container">
+            <h3>📋 使用说明</h3>
+            <ul>
+                <li><strong>开启学习模式：</strong>开始记录您的操作行为</li>
+                <li><strong>结束学习模式：</strong>停止记录并保存学习数据</li>
+                <li>学习模式开启后，插件会自动记录您的点击、输入等操作</li>
+                <li>每次操作都会记录XPath和CSS Selector，方便后续自动化</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script src="sidepanel.js"></script>
+</body>
+</html> 

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI浏览器自动化系统</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="top-container">
+        <div class="header-content">
+            <div class="logo">🤖 AI浏览器自动化</div>
+            <button class="menu-button" onclick="toggleMenu()">📋 功能菜单 ▼</button>
+        </div>
+        
+        <div class="tree-menu" id="treeMenu">
+            <div class="tree-item has-children" onclick="toggleSubMenu(this)">🔧 系统管理</div>
+            <div class="sub-menu">
+                <div class="sub-item" onclick="showDetail('👥 用户管理', '管理系统用户信息，包括用户创建、编辑、删除等操作。')">👥 用户管理</div>
+                <div class="sub-item" onclick="showDetail('🛡️ 角色管理', '管理系统角色和权限分配，确保系统安全性。')">🛡️ 角色管理</div>
+                <div class="sub-item" onclick="showDetail('🔐 权限管理', '配置系统权限，控制用户访问范围。')">🔐 权限管理</div>
+            </div>
+            
+            <div class="tree-item has-children" onclick="toggleSubMenu(this)">📊 数据管理</div>
+            <div class="sub-menu">
+                <div class="sub-item" onclick="showDetail('📥 数据导入', '支持多种格式的数据导入功能，包括CSV、Excel等。')">📥 数据导入</div>
+                <div class="sub-item" onclick="showDetail('📤 数据导出', '将系统数据导出为各种格式，便于分析和备份。')">📤 数据导出</div>
+                <div class="sub-item" onclick="showDetail('💾 数据备份', '定期备份重要数据，确保数据安全。')">💾 数据备份</div>
+            </div>
+            
+            <div class="tree-item has-children" onclick="toggleSubMenu(this)">🤖 自动化工具</div>
+            <div class="sub-menu">
+                <div class="sub-item" onclick="showDetail('🌐 浏览器自动化', '使用AI技术实现浏览器操作自动化，提高工作效率。')">🌐 浏览器自动化</div>
+                <div class="sub-item" onclick="showDetail('⏰ 任务调度', '设置定时任务，自动执行重复性工作。')">⏰ 任务调度</div>
+                <div class="sub-item" onclick="showDetail('🔔 监控告警', '实时监控系统状态，及时发现问题并告警。')">🔔 监控告警</div>
+            </div>
+            
+            <div class="tree-item has-children" onclick="toggleSubMenu(this)">📈 报表分析</div>
+            <div class="sub-menu">
+                <div class="sub-item" onclick="showDetail('📊 数据报表', '生成各类数据报表，支持图表展示。')">📊 数据报表</div>
+                <div class="sub-item" onclick="showDetail('📈 趋势分析', '分析数据趋势，为决策提供支持。')">📈 趋势分析</div>
+                <div class="sub-item" onclick="showDetail('⚡ 性能监控', '监控系统性能指标，优化系统运行。')">⚡ 性能监控</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-container">
+        <div class="detail-box">
+            <div class="detail-header">
+                <h1 class="detail-title">🤖 AI浏览器自动化系统</h1>
+                <p class="detail-subtitle">智能化的浏览器操作自动化平台</p>
+            </div>
+            <div class="detail-content" id="detailContent">
+                <p>欢迎使用AI浏览器自动化系统！这是一个功能强大的智能化平台，集成了多种实用工具和功能模块。</p>
+                
+                <h3>🌟 系统特点：</h3>
+                <ul>
+                    <li><strong>智能化操作：</strong>基于AI技术，能够智能识别网页元素</li>
+                    <li><strong>高度可定制：</strong>支持自定义脚本和规则</li>
+                    <li><strong>安全可靠：</strong>完善的权限管理和数据安全保护</li>
+                    <li><strong>易于使用：</strong>直观的用户界面，无需编程经验</li>
+                </ul>
+                
+                <p>💡 <strong>使用提示：</strong>点击上方菜单中的任意项目，可以查看该功能的详细信息和操作说明。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleMenu() {
+            const menu = document.getElementById('treeMenu');
+            menu.classList.toggle('show');
+        }
+
+        function toggleSubMenu(element) {
+            const subMenu = element.nextElementSibling;
+            element.classList.toggle('expanded');
+            subMenu.classList.toggle('show');
+        }
+
+        function showDetail(title, content) {
+            const detailTitle = document.querySelector('.detail-title');
+            const detailContent = document.getElementById('detailContent');
+            
+            detailTitle.textContent = title;
+            
+            // 如果是用户管理，显示用户表格
+            if (title === '👥 用户管理') {
+                detailContent.innerHTML = `
+                    <p>${content}</p>
+                    
+                    <h3>📊 用户列表</h3>
+                    <div class="table-container">
+                        <table class="user-table">
+                            <thead>
+                                <tr>
+                                    <th>用户ID</th>
+                                    <th>用户名</th>
+                                    <th>邮箱</th>
+                                    <th>角色</th>
+                                    <th>创建时间</th>
+                                    <th>最后登录</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>001</td>
+                                    <td>admin</td>
+                                    <td>admin@example.com</td>
+                                    <td>管理员</td>
+                                    <td>2024-01-15</td>
+                                    <td>2024-06-21 10:30</td>
+                                    <td><span class="status normal">正常</span></td>
+                                    <td>
+                                        <button class="action-btn edit">编辑</button>
+                                        <button class="action-btn delete">删除</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>002</td>
+                                    <td>zhangsan</td>
+                                    <td>zhangsan@example.com</td>
+                                    <td>普通用户</td>
+                                    <td>2024-02-20</td>
+                                    <td>2024-06-20 15:45</td>
+                                    <td><span class="status normal">正常</span></td>
+                                    <td>
+                                        <button class="action-btn edit">编辑</button>
+                                        <button class="action-btn delete">删除</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>003</td>
+                                    <td>lisi</td>
+                                    <td>lisi@example.com</td>
+                                    <td>普通用户</td>
+                                    <td>2024-03-10</td>
+                                    <td>2024-06-19 09:15</td>
+                                    <td><span class="status abnormal">异常</span></td>
+                                    <td>
+                                        <button class="action-btn edit">编辑</button>
+                                        <button class="action-btn delete">删除</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>004</td>
+                                    <td>wangwu</td>
+                                    <td>wangwu@example.com</td>
+                                    <td>操作员</td>
+                                    <td>2024-04-05</td>
+                                    <td>2024-06-21 08:20</td>
+                                    <td><span class="status normal">正常</span></td>
+                                    <td>
+                                        <button class="action-btn edit">编辑</button>
+                                        <button class="action-btn delete">删除</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>005</td>
+                                    <td>zhaoliu</td>
+                                    <td>zhaoliu@example.com</td>
+                                    <td>普通用户</td>
+                                    <td>2024-05-12</td>
+                                    <td>2024-06-18 14:30</td>
+                                    <td><span class="status abnormal">异常</span></td>
+                                    <td>
+                                        <button class="action-btn edit">编辑</button>
+                                        <button class="action-btn delete">删除</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="table-actions">
+                        <button class="add-user-btn">➕ 添加用户</button>
+                        <button class="export-btn">📤 导出数据</button>
+                    </div>
+                `;
+            } else if (title === '⚡ 性能监控') {
+                // 生成随机性能数据
+                const generatePerformanceData = () => {
+                    const hosts = ['Web服务器-01', '数据库服务器-02', '应用服务器-03'];
+                    const data = [];
+                    
+                    hosts.forEach(host => {
+                        const cpuUsage = Math.floor(Math.random() * 100);
+                        const memoryUsage = Math.floor(Math.random() * 100);
+                        data.push({
+                            host: host,
+                            cpu: cpuUsage,
+                            memory: memoryUsage,
+                            timestamp: new Date().toLocaleTimeString()
+                        });
+                    });
+                    return data;
+                };
+                
+                const performanceData = generatePerformanceData();
+                
+                detailContent.innerHTML = `
+                    <p>${content}</p>
+                    
+                    <h3>📊 主机性能监控</h3>
+                    <div class="tab-container">
+                        <div class="tab-buttons">
+                            <button class="tab-btn active" onclick="switchTab('tab1')">🖥️ 主机1</button>
+                            <button class="tab-btn" onclick="switchTab('tab2')">🖥️ 主机2</button>
+                            <button class="tab-btn" onclick="switchTab('tab3')">🖥️ 主机3</button>
+                        </div>
+                        
+                        <div class="tab-content">
+                            <div id="tab1" class="tab-panel active">
+                                <h4>${performanceData[0].host}</h4>
+                                <div class="performance-grid">
+                                    <div class="performance-card">
+                                        <div class="metric-header">
+                                            <span class="metric-icon">🖥️</span>
+                                            <span class="metric-title">CPU利用率</span>
+                                        </div>
+                                        <div class="metric-value ${performanceData[0].cpu > 80 ? 'critical' : ''}">
+                                            ${performanceData[0].cpu}%
+                                        </div>
+                                        <div class="metric-bar">
+                                            <div class="metric-fill cpu-fill" style="width: ${performanceData[0].cpu}%"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="performance-card">
+                                        <div class="metric-header">
+                                            <span class="metric-icon">💾</span>
+                                            <span class="metric-title">内存使用率</span>
+                                        </div>
+                                        <div class="metric-value ${performanceData[0].memory > 75 ? 'critical' : ''}">
+                                            ${performanceData[0].memory}%
+                                        </div>
+                                        <div class="metric-bar">
+                                            <div class="metric-fill memory-fill" style="width: ${performanceData[0].memory}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="update-time">更新时间: ${performanceData[0].timestamp}</div>
+                            </div>
+                            
+                            <div id="tab2" class="tab-panel">
+                                <h4>${performanceData[1].host}</h4>
+                                <div class="performance-grid">
+                                    <div class="performance-card">
+                                        <div class="metric-header">
+                                            <span class="metric-icon">🖥️</span>
+                                            <span class="metric-title">CPU利用率</span>
+                                        </div>
+                                        <div class="metric-value ${performanceData[1].cpu > 80 ? 'critical' : ''}">
+                                            ${performanceData[1].cpu}%
+                                        </div>
+                                        <div class="metric-bar">
+                                            <div class="metric-fill cpu-fill" style="width: ${performanceData[1].cpu}%"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="performance-card">
+                                        <div class="metric-header">
+                                            <span class="metric-icon">💾</span>
+                                            <span class="metric-title">内存使用率</span>
+                                        </div>
+                                        <div class="metric-value ${performanceData[1].memory > 75 ? 'critical' : ''}">
+                                            ${performanceData[1].memory}%
+                                        </div>
+                                        <div class="metric-bar">
+                                            <div class="metric-fill memory-fill" style="width: ${performanceData[1].memory}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="update-time">更新时间: ${performanceData[1].timestamp}</div>
+                            </div>
+                            
+                            <div id="tab3" class="tab-panel">
+                                <h4>${performanceData[2].host}</h4>
+                                <div class="performance-grid">
+                                    <div class="performance-card">
+                                        <div class="metric-header">
+                                            <span class="metric-icon">🖥️</span>
+                                            <span class="metric-title">CPU利用率</span>
+                                        </div>
+                                        <div class="metric-value ${performanceData[2].cpu > 80 ? 'critical' : ''}">
+                                            ${performanceData[2].cpu}%
+                                        </div>
+                                        <div class="metric-bar">
+                                            <div class="metric-fill cpu-fill" style="width: ${performanceData[2].cpu}%"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="performance-card">
+                                        <div class="metric-header">
+                                            <span class="metric-icon">💾</span>
+                                            <span class="metric-title">内存使用率</span>
+                                        </div>
+                                        <div class="metric-value ${performanceData[2].memory > 75 ? 'critical' : ''}">
+                                            ${performanceData[2].memory}%
+                                        </div>
+                                        <div class="metric-bar">
+                                            <div class="metric-fill memory-fill" style="width: ${performanceData[2].memory}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="update-time">更新时间: ${performanceData[2].timestamp}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="performance-actions">
+                        <button class="refresh-btn" onclick="refreshPerformance()">🔄 刷新数据</button>
+                        <button class="export-performance-btn">📊 导出报告</button>
+                    </div>
+                `;
+            } else {
+                // 其他功能显示原有内容
+                detailContent.innerHTML = `
+                    <p>${content}</p>
+                    
+                    <h3>🚀 功能特点：</h3>
+                    <ul>
+                        <li><strong>操作简单：</strong>界面友好，操作直观</li>
+                        <li><strong>功能完善：</strong>提供完整的解决方案</li>
+                        <li><strong>性能稳定：</strong>确保系统稳定运行</li>
+                        <li><strong>安全可靠：</strong>多重安全保护</li>
+                    </ul>
+                    
+                    <h3>📋 使用说明：</h3>
+                    <p>点击相关按钮即可开始使用该功能。如遇问题，可查看帮助文档或联系技术支持。</p>
+                `;
+            }
+            
+            document.getElementById('treeMenu').classList.remove('show');
+        }
+
+        // Tab切换功能
+        function switchTab(tabId) {
+            // 隐藏所有tab面板
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            
+            // 移除所有tab按钮的active状态
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 显示选中的tab面板
+            document.getElementById(tabId).classList.add('active');
+            
+            // 激活对应的tab按钮
+            event.target.classList.add('active');
+        }
+
+        // 刷新性能数据
+        function refreshPerformance() {
+            // 重新生成数据并更新显示
+            const performanceData = generatePerformanceData();
+            // 这里可以添加数据更新逻辑
+            alert('数据已刷新！');
+        }
+
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('treeMenu');
+            const menuButton = document.querySelector('.menu-button');
+            
+            if (!menu.contains(event.target) && !menuButton.contains(event.target)) {
+                menu.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html> 
