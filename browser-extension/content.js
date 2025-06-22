@@ -333,7 +333,7 @@ function getElementDescription(element) {
     return element.tagName.toLowerCase();
 }
 
-// 获取元素的XPath
+// 获取元素的XPath（类似Chrome开发者工具的Copy full XPath）
 function getXPath(element) {
     if (element.id) {
         return `//*[@id="${element.id}"]`;
@@ -343,28 +343,64 @@ function getXPath(element) {
         return '/html/body';
     }
     
-    let path = '';
+    if (element === document.documentElement) {
+        return '/html';
+    }
+    
+    if (element === document.head) {
+        return '/html/head';
+    }
+    
+    function getElementIndex(element) {
+        if (!element.parentElement) return 1;
+        
+        const parent = element.parentElement;
+        const tagName = element.tagName.toLowerCase();
+        
+        // 对于html、head、body这些特殊元素，不计算索引
+        if (tagName === 'html' || tagName === 'head' || tagName === 'body') {
+            return 1;
+        }
+        
+        // 计算同类型兄弟元素的索引（Chrome的行为）
+        let index = 1;
+        let sibling = element.previousElementSibling;
+        
+        while (sibling) {
+            if (sibling.tagName === element.tagName) {
+                index++;
+            }
+            sibling = sibling.previousElementSibling;
+        }
+        
+        return index;
+    }
+    
+    let pathSegments = [];
     let current = element;
     
     while (current && current.nodeType === Node.ELEMENT_NODE) {
-        let index = 1;
-        let sibling = current.previousSibling;
+        const tagName = current.tagName.toLowerCase();
+        const index = getElementIndex(current);
         
-        while (sibling) {
-            if (sibling.nodeType === Node.ELEMENT_NODE && sibling.tagName === current.tagName) {
-                index++;
-            }
-            sibling = sibling.previousSibling;
+        // 对于html、head、body，不添加索引
+        if (tagName === 'html' || tagName === 'head' || tagName === 'body') {
+            pathSegments.unshift(tagName);
+        } else {
+            // 总是添加索引以确保精确匹配，即使索引是1
+            pathSegments.unshift(`${tagName}[${index}]`);
         }
         
-        const tagName = current.tagName.toLowerCase();
-        const pathIndex = index > 1 ? `[${index}]` : '';
-        path = `/${tagName}${pathIndex}${path}`;
-        
-        current = current.parentNode;
+        current = current.parentElement;
+        if (current === document.documentElement) break; 
     }
     
-    return path;
+    // 确保路径以 /html 开头
+    if (pathSegments[0] !== 'html') {
+        pathSegments.unshift('html');
+    }
+    
+    return '/' + pathSegments.join('/');
 }
 
 // 添加学习模式视觉指示器
