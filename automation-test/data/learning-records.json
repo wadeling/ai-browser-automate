@@ -1,0 +1,114 @@
+[
+  {
+    "type": "click",
+    "description": "点击 类名为\"menu-button\"的button",
+    "timestamp": "2025-06-21T12:15:17.221Z",
+    "url": "http://localhost:8004/",
+    "element": {
+      "tagName": "BUTTON",
+      "id": "",
+      "className": "menu-button",
+      "textContent": "📋 功能菜单 ▼",
+      "xpath": "/html/body/div/div/button",
+      "selector": ".menu-button"
+    }
+  },
+  {
+    "type": "click",
+    "description": "点击 类名为\"tree-item\"的div",
+    "timestamp": "2025-06-21T12:15:20.082Z",
+    "url": "http://localhost:8004/",
+    "element": {
+      "tagName": "DIV",
+      "id": "",
+      "className": "tree-item has-children",
+      "textContent": "📈 报表分析",
+      "xpath": "/html/body/div/div[2]/div[7]",
+      "selector": ".tree-item.has-children"
+    }
+  },
+  {
+    "type": "click",
+    "description": "点击 类名为\"sub-item\"的div",
+    "timestamp": "2025-06-21T12:15:21.558Z",
+    "url": "http://localhost:8004/",
+    "element": {
+      "tagName": "DIV",
+      "id": "",
+      "className": "sub-item",
+      "textContent": "⚡ 性能监控",
+      "xpath": "/html/body/div/div[2]/div[8]/div[3]",
+      "selector": ".sub-item"
+    }
+  },
+  {
+    "type": "click",
+    "description": "点击 类名为\"metric-value\"的div",
+    "timestamp": "2025-06-21T12:15:26.227Z",
+    "url": "http://localhost:8004/",
+    "element": {
+      "tagName": "DIV",
+      "id": "",
+      "className": "metric-value ",
+      "textContent": "\n                                            32%\n ",
+      "xpath": "/html/body/div[2]/div/div[2]/div/div[2]/div/div/div/div[2]",
+      "selector": ".metric-value"
+    }
+  },
+  {
+    "type": "click",
+    "description": "点击 类名为\"tab-btn\"的button",
+    "timestamp": "2025-06-21T12:15:27.643Z",
+    "url": "http://localhost:8004/",
+    "element": {
+      "tagName": "BUTTON",
+      "id": "",
+      "className": "tab-btn",
+      "textContent": "🖥️ 主机2",
+      "xpath": "/html/body/div[2]/div/div[2]/div/div/button[2]",
+      "selector": ".tab-btn"
+    }
+  },
+  {
+    "type": "click",
+    "description": "点击 类名为\"metric-value\"的div",
+    "timestamp": "2025-06-21T12:15:29.394Z",
+    "url": "http://localhost:8004/",
+    "element": {
+      "tagName": "DIV",
+      "id": "",
+      "className": "metric-value ",
+      "textContent": "\n                                            12%\n ",
+      "xpath": "/html/body/div[2]/div/div[2]/div/div[2]/div[2]/div/div/div[2]",
+      "selector": ".metric-value"
+    }
+  },
+  {
+    "type": "click",
+    "description": "点击 类名为\"tab-btn\"的button",
+    "timestamp": "2025-06-21T12:15:29.967Z",
+    "url": "http://localhost:8004/",
+    "element": {
+      "tagName": "BUTTON",
+      "id": "",
+      "className": "tab-btn",
+      "textContent": "🖥️ 主机3",
+      "xpath": "/html/body/div[2]/div/div[2]/div/div/button[3]",
+      "selector": ".tab-btn"
+    }
+  },
+  {
+    "type": "click",
+    "description": "点击 类名为\"metric-value\"的div",
+    "timestamp": "2025-06-21T12:15:32.467Z",
+    "url": "http://localhost:8004/",
+    "element": {
+      "tagName": "DIV",
+      "id": "",
+      "className": "metric-value critical",
+      "textContent": "\n                                            84%\n ",
+      "xpath": "/html/body/div[2]/div/div[2]/div/div[2]/div[3]/div/div[2]/div[2]",
+      "selector": ".metric-value.critical"
+    }
+  }
+]
