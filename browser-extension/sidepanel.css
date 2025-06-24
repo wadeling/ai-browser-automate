@@ -364,5 +364,261 @@ body {
 }
 
 .table-wrapper::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.5);
+    background: #555;
+}
+
+/* 路径按钮样式 */
+.path-btn {
+    background: linear-gradient(135deg, #007bff 0%, #6610f2 100%);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.path-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+}
+
+.path-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* 路径可视化模态框样式 */
+.path-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+}
+
+.path-modal.show {
+    display: flex;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.path-modal-content {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    max-width: 95%;
+    max-height: 95%;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    position: relative;
+}
+
+.path-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.path-modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+}
+
+.path-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    padding: 5px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.path-modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.path-canvas-container {
+    position: relative;
+    width: 100%;
+    height: 500px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid #e9ecef;
+}
+
+.path-canvas {
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+}
+
+.path-canvas:active {
+    cursor: grabbing;
+}
+
+.path-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    justify-content: center;
+}
+
+.path-control-btn {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.path-control-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.path-control-btn.zoom-in {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.path-control-btn.zoom-out {
+    background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+}
+
+.path-control-btn.reset {
+    background: linear-gradient(135deg, #007bff 0%, #6610f2 100%);
+}
+
+.path-control-btn.toggle-curve {
+    background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%);
+}
+
+.path-info {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.path-info h4 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 14px;
+}
+
+.path-info p {
+    margin: 5px 0;
+    font-size: 12px;
+    color: #666;
+}
+
+/* 节点hover提示框 */
+.node-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    max-width: 300px;
+    z-index: 10001;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(5px);
+}
+
+.node-tooltip.show {
+    opacity: 1;
+}
+
+.node-tooltip h5 {
+    margin: 0 0 8px 0;
+    color: #20c997;
+    font-size: 13px;
+}
+
+.node-tooltip p {
+    margin: 3px 0;
+    line-height: 1.4;
+}
+
+.node-tooltip .tooltip-label {
+    color: #20c997;
+    font-weight: 600;
+}
+
+.node-tooltip .tooltip-value {
+    color: #fff;
+    word-break: break-all;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* 节点样式 */
+.path-node {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.path-node:hover {
+    filter: brightness(1.2);
+}
+
+.path-node.selected {
+    filter: brightness(1.3) drop-shadow(0 0 8px rgba(0, 123, 255, 0.6));
+}
+
+/* 响应式设计 */
+@media (max-width: 600px) {
+    .path-modal-content {
+        margin: 10px;
+        padding: 20px;
+        max-width: calc(100% - 20px);
+        max-height: calc(100% - 20px);
+    }
+    
+    .path-canvas-container {
+        height: 350px;
+    }
+    
+    .path-controls {
+        flex-wrap: wrap;
+    }
+    
+    .node-tooltip {
+        max-width: 250px;
+        font-size: 11px;
+    }
 } 

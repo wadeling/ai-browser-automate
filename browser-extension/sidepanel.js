@@ -12,6 +12,18 @@ const statusText = statusIndicator.querySelector('.status-text');
 const recordsTableBody = document.getElementById('recordsTableBody');
 const clearRecordsBtn = document.getElementById('clearRecords');
 const exportRecordsBtn = document.getElementById('exportRecords');
+const viewPathBtn = document.getElementById('viewPath');
+
+// 路径可视化相关元素
+const pathModal = document.getElementById('pathModal');
+const pathCanvas = document.getElementById('pathCanvas');
+const closePathModal = document.getElementById('closePathModal');
+const zoomInBtn = document.getElementById('zoomIn');
+const zoomOutBtn = document.getElementById('zoomOut');
+const resetViewBtn = document.getElementById('resetView');
+const toggleCurveBtn = document.getElementById('toggleCurve');
+const pathSummary = document.getElementById('pathSummary');
+const nodeTooltip = document.getElementById('nodeTooltip');
 
 // 初始化
 document.addEventListener('DOMContentLoaded', function() {
@@ -29,6 +41,21 @@ document.addEventListener('DOMContentLoaded', function() {
     stopBtn.addEventListener('click', stopLearningMode);
     clearRecordsBtn.addEventListener('click', clearRecords);
     exportRecordsBtn.addEventListener('click', exportRecords);
+    viewPathBtn.addEventListener('click', showPathVisualization);
+    
+    // 绑定路径可视化事件
+    closePathModal.addEventListener('click', hidePathModal);
+    zoomInBtn.addEventListener('click', zoomIn);
+    zoomOutBtn.addEventListener('click', zoomOut);
+    resetViewBtn.addEventListener('click', resetView);
+    toggleCurveBtn.addEventListener('click', toggleCurvePath);
+    
+    // 点击模态框外部关闭
+    pathModal.addEventListener('click', function(e) {
+        if (e.target === pathModal) {
+            hidePathModal();
+        }
+    });
 });
 
 // 开启学习模式
@@ -97,6 +124,7 @@ function updateUI() {
         // 学习模式开启状态
         startBtn.disabled = true;
         stopBtn.disabled = false;
+        viewPathBtn.disabled = true; // 学习时禁用路径查看
         
         statusIndicator.className = 'status-indicator learning';
         statusIcon.textContent = '🎯';
@@ -104,10 +132,12 @@ function updateUI() {
         
         startBtn.style.opacity = '0.6';
         stopBtn.style.opacity = '1';
+        viewPathBtn.style.opacity = '0.6';
     } else {
         // 学习模式关闭状态
         startBtn.disabled = false;
         stopBtn.disabled = true;
+        viewPathBtn.disabled = learningData.length === 0; // 没有记录时禁用
         
         statusIndicator.className = 'status-indicator stopped';
         statusIcon.textContent = '⏸️';
@@ -115,6 +145,7 @@ function updateUI() {
         
         startBtn.style.opacity = '1';
         stopBtn.style.opacity = '0.6';
+        viewPathBtn.style.opacity = learningData.length === 0 ? '0.6' : '1';
     }
 }
 
@@ -167,6 +198,9 @@ function clearRecords() {
         chrome.storage.local.set({
             learningData: []
         });
+        
+        // 更新UI状态
+        updateUI();
         
         showNotification('记录已清空', '所有学习记录已被删除');
     }
@@ -322,4 +356,540 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         // 更新状态显示
         statusText.textContent = `正在学习... (${learningData.length} 个操作)`;
     }
-}); 
+});
+
+// ==================== 路径可视化功能 ====================
+
+// 路径可视化状态
+let pathCanvasCtx;
+let pathScale = 1;
+let pathOffsetX = 0;
+let pathOffsetY = 0;
+let isDragging = false;
+let lastMouseX = 0;
+let lastMouseY = 0;
+let selectedNode = null;
+let isCurvedPath = false;
+let hoveredNode = null;
+let tooltipTimeout = null;
+
+// 节点配置
+const nodeConfig = {
+    radius: 30,
+    colors: {
+        click: '#28a745',
+        input: '#007bff',
+        change: '#ffc107',
+        submit: '#dc3545'
+    },
+    spacing: 150,
+    textMaxLength: 20,
+    textLineHeight: 16
+};
+
+// 显示路径可视化
+function showPathVisualization() {
+    if (learningData.length === 0) {
+        alert('没有可显示的操作记录');
+        return;
+    }
+    
+    // 显示模态框
+    pathModal.classList.add('show');
+    
+    // 初始化Canvas
+    initPathCanvas();
+    
+    // 绘制路径
+    drawPath();
+    
+    // 更新路径信息
+    updatePathInfo();
+}
+
+// 隐藏路径可视化
+function hidePathModal() {
+    pathModal.classList.remove('show');
+    selectedNode = null;
+    hoveredNode = null;
+    hideNodeTooltip();
+    isCurvedPath = false;
+    toggleCurveBtn.textContent = '🔄 切换弯曲';
+}
+
+// 初始化Canvas
+function initPathCanvas() {
+    const canvas = pathCanvas;
+    const container = canvas.parentElement;
+    
+    // 设置Canvas尺寸
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+    
+    // 获取2D上下文
+    pathCanvasCtx = canvas.getContext('2d');
+    
+    // 重置变换
+    pathScale = 1;
+    pathOffsetX = 0;
+    pathOffsetY = 0;
+    
+    // 绑定鼠标事件
+    canvas.addEventListener('mousedown', startDrag);
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseup', endDrag);
+    canvas.addEventListener('click', handleNodeClick);
+    canvas.addEventListener('wheel', handleWheel);
+    canvas.addEventListener('mouseleave', handleMouseLeave);
+}
+
+// 绘制路径
+function drawPath() {
+    if (!pathCanvasCtx) return;
+    
+    const ctx = pathCanvasCtx;
+    const canvas = pathCanvas;
+    
+    // 清空画布
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // 应用变换
+    ctx.save();
+    ctx.translate(pathOffsetX, pathOffsetY);
+    ctx.scale(pathScale, pathScale);
+    
+    // 计算节点位置
+    const positions = calculateNodePositions(canvas);
+    
+    // 绘制连接线
+    for (let i = 1; i < learningData.length; i++) {
+        const prevPos = positions[i - 1];
+        const currPos = positions[i];
+        drawConnectionLine(prevPos.x, prevPos.y, currPos.x, currPos.y);
+    }
+    
+    // 绘制节点
+    learningData.forEach((record, index) => {
+        const pos = positions[index];
+        drawNode(pos.x, pos.y, record, index);
+    });
+    
+    ctx.restore();
+}
+
+// 计算节点位置
+function calculateNodePositions(canvas) {
+    const positions = [];
+    const totalNodes = learningData.length;
+    
+    if (isCurvedPath && totalNodes > 3) {
+        // 弯曲路径：使用蛇形布局
+        const rows = Math.ceil(Math.sqrt(totalNodes));
+        const cols = Math.ceil(totalNodes / rows);
+        const startX = (canvas.width / pathScale - pathOffsetX / pathScale) / 2 - (cols * nodeConfig.spacing) / 2;
+        const startY = (canvas.height / pathScale - pathOffsetY / pathScale) / 2 - (rows * nodeConfig.spacing) / 2;
+        
+        for (let i = 0; i < totalNodes; i++) {
+            const row = Math.floor(i / cols);
+            const col = i % cols;
+            const x = startX + col * nodeConfig.spacing;
+            const y = startY + row * nodeConfig.spacing;
+            positions.push({ x, y });
+        }
+    } else {
+        // 直线路径
+        const startX = (canvas.width / pathScale - pathOffsetX / pathScale) / 2 - (totalNodes - 1) * nodeConfig.spacing / 2;
+        const startY = (canvas.height / pathScale - pathOffsetY / pathScale) / 2;
+        
+        for (let i = 0; i < totalNodes; i++) {
+            const x = startX + i * nodeConfig.spacing;
+            const y = startY;
+            positions.push({ x, y });
+        }
+    }
+    
+    return positions;
+}
+
+// 绘制节点
+function drawNode(x, y, record, index) {
+    const ctx = pathCanvasCtx;
+    const color = nodeConfig.colors[record.type] || '#6c757d';
+    
+    // 绘制节点圆圈
+    ctx.beginPath();
+    ctx.arc(x, y, nodeConfig.radius, 0, 2 * Math.PI);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    // 绘制节点编号
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(index + 1, x, y);
+    
+    // 绘制操作类型
+    ctx.fillStyle = '#333';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(getTypeText(record.type), x, y + nodeConfig.radius + 15);
+    
+    // 绘制文本内容（从记录中提取）
+    const textContent = extractTextContent(record);
+    if (textContent) {
+        const lines = wrapText(textContent, nodeConfig.textMaxLength);
+        lines.forEach((line, lineIndex) => {
+            const lineY = y + nodeConfig.radius + 35 + lineIndex * nodeConfig.textLineHeight;
+            ctx.fillText(line, x, lineY);
+        });
+    }
+    
+    // 存储节点信息用于点击和hover检测
+    const textHeight = textContent ? (wrapText(textContent, nodeConfig.textMaxLength).length * nodeConfig.textLineHeight) : 0;
+    record._nodeBounds = {
+        x: x - nodeConfig.radius,
+        y: y - nodeConfig.radius,
+        width: nodeConfig.radius * 2,
+        height: nodeConfig.radius * 2 + 50 + textHeight,
+        centerX: x,
+        centerY: y
+    };
+}
+
+// 提取文本内容
+function extractTextContent(record) {
+    // 根据操作类型提取相关文本
+    switch (record.type) {
+        case 'click':
+            return record.description.replace(/点击/, '').trim();
+        case 'input':
+            return record.description.replace(/输入/, '').trim();
+        case 'change':
+            return record.description.replace(/选择/, '').trim();
+        case 'submit':
+            return record.description.replace(/提交/, '').trim();
+        default:
+            return record.description;
+    }
+}
+
+// 文本换行
+function wrapText(text, maxLength) {
+    if (!text || text.length <= maxLength) {
+        return text ? [text] : [];
+    }
+    
+    const lines = [];
+    let currentLine = '';
+    
+    for (let i = 0; i < text.length; i++) {
+        currentLine += text[i];
+        if (currentLine.length >= maxLength && i < text.length - 1) {
+            lines.push(currentLine);
+            currentLine = '';
+        }
+    }
+    
+    if (currentLine) {
+        lines.push(currentLine);
+    }
+    
+    return lines.slice(0, 3); // 最多显示3行
+}
+
+// 绘制连接线
+function drawConnectionLine(x1, y1, x2, y2) {
+    const ctx = pathCanvasCtx;
+    
+    if (isCurvedPath) {
+        // 弯曲路径：使用贝塞尔曲线
+        const controlPoint1 = { x: x1 + (x2 - x1) * 0.5, y: y1 };
+        const controlPoint2 = { x: x2 - (x2 - x1) * 0.5, y: y2 };
+        
+        ctx.beginPath();
+        ctx.moveTo(x1 + nodeConfig.radius, y1);
+        ctx.bezierCurveTo(controlPoint1.x, controlPoint1.y, controlPoint2.x, controlPoint2.y, x2 - nodeConfig.radius, y2);
+        ctx.strokeStyle = '#007bff';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        
+        // 绘制弯曲路径的箭头
+        const arrowLength = 15;
+        const arrowAngle = Math.PI / 6;
+        
+        // 计算曲线终点处的切线方向
+        const t = 0.9; // 在曲线90%处绘制箭头
+        const tangentX = 3 * Math.pow(1 - t, 2) * (controlPoint1.x - (x1 + nodeConfig.radius)) +
+                        6 * (1 - t) * t * (controlPoint2.x - controlPoint1.x) +
+                        3 * t * t * ((x2 - nodeConfig.radius) - controlPoint2.x);
+        const tangentY = 3 * Math.pow(1 - t, 2) * (controlPoint1.y - y1) +
+                        6 * (1 - t) * t * (controlPoint2.y - controlPoint1.y) +
+                        3 * t * t * (y2 - controlPoint2.y);
+        
+        const angle = Math.atan2(tangentY, tangentX);
+        
+        // 计算箭头位置
+        const arrowX = x1 + nodeConfig.radius + (x2 - x1) * 0.9;
+        const arrowY = y1 + (y2 - y1) * 0.9;
+        
+        ctx.beginPath();
+        ctx.moveTo(arrowX, arrowY);
+        ctx.lineTo(arrowX - arrowLength * Math.cos(angle - arrowAngle), 
+                   arrowY - arrowLength * Math.sin(angle - arrowAngle));
+        ctx.moveTo(arrowX, arrowY);
+        ctx.lineTo(arrowX - arrowLength * Math.cos(angle + arrowAngle), 
+                   arrowY - arrowLength * Math.sin(angle + arrowAngle));
+        ctx.strokeStyle = '#007bff';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+    } else {
+        // 直线路径
+        ctx.beginPath();
+        ctx.moveTo(x1 + nodeConfig.radius, y1);
+        ctx.lineTo(x2 - nodeConfig.radius, y2);
+        ctx.strokeStyle = '#007bff';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        
+        // 绘制直线路径的箭头
+        const arrowLength = 15;
+        const arrowAngle = Math.PI / 6;
+        
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const angle = Math.atan2(dy, dx);
+        
+        const arrowX = x2 - nodeConfig.radius;
+        const arrowY = y2;
+        
+        ctx.beginPath();
+        ctx.moveTo(arrowX, arrowY);
+        ctx.lineTo(arrowX - arrowLength * Math.cos(angle - arrowAngle), 
+                   arrowY - arrowLength * Math.sin(angle - arrowAngle));
+        ctx.moveTo(arrowX, arrowY);
+        ctx.lineTo(arrowX - arrowLength * Math.cos(angle + arrowAngle), 
+                   arrowY - arrowLength * Math.sin(angle + arrowAngle));
+        ctx.strokeStyle = '#007bff';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+    }
+}
+
+// 鼠标拖拽功能
+function startDrag(e) {
+    isDragging = true;
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+    pathCanvas.style.cursor = 'grabbing';
+}
+
+function handleMouseMove(e) {
+    if (isDragging) {
+        const deltaX = e.clientX - lastMouseX;
+        const deltaY = e.clientY - lastMouseY;
+        
+        pathOffsetX += deltaX;
+        pathOffsetY += deltaY;
+        
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+        
+        drawPath();
+        return;
+    }
+    
+    // 检测hover
+    const rect = pathCanvas.getBoundingClientRect();
+    const mouseX = (e.clientX - rect.left - pathOffsetX) / pathScale;
+    const mouseY = (e.clientY - rect.top - pathOffsetY) / pathScale;
+    
+    let foundNode = null;
+    learningData.forEach((record, index) => {
+        if (record._nodeBounds) {
+            const bounds = record._nodeBounds;
+            if (mouseX >= bounds.x && mouseX <= bounds.x + bounds.width &&
+                mouseY >= bounds.y && mouseY <= bounds.y + bounds.height) {
+                foundNode = record;
+                return;
+            }
+        }
+    });
+    
+    // 更新hover状态
+    if (foundNode !== hoveredNode) {
+        hoveredNode = foundNode;
+        
+        if (hoveredNode) {
+            // 显示tooltip
+            showNodeTooltip(e, hoveredNode);
+            pathCanvas.style.cursor = 'pointer';
+        } else {
+            // 隐藏tooltip
+            hideNodeTooltip();
+            pathCanvas.style.cursor = 'grab';
+        }
+    }
+}
+
+function endDrag() {
+    isDragging = false;
+    pathCanvas.style.cursor = 'grab';
+}
+
+// 鼠标滚轮缩放
+function handleWheel(e) {
+    e.preventDefault();
+    
+    const scaleFactor = e.deltaY > 0 ? 0.9 : 1.1;
+    const newScale = Math.max(0.5, Math.min(3, pathScale * scaleFactor));
+    
+    // 计算鼠标位置相对于Canvas的偏移
+    const rect = pathCanvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    
+    // 调整偏移以保持鼠标位置不变
+    pathOffsetX = mouseX - (mouseX - pathOffsetX) * (newScale / pathScale);
+    pathOffsetY = mouseY - (mouseY - pathOffsetY) * (newScale / pathScale);
+    
+    pathScale = newScale;
+    drawPath();
+}
+
+// 鼠标离开Canvas
+function handleMouseLeave() {
+    isDragging = false;
+    pathCanvas.style.cursor = 'grab';
+}
+
+// 节点点击处理
+function handleNodeClick(e) {
+    const rect = pathCanvas.getBoundingClientRect();
+    const mouseX = (e.clientX - rect.left - pathOffsetX) / pathScale;
+    const mouseY = (e.clientY - rect.top - pathOffsetY) / pathScale;
+    
+    // 检查点击了哪个节点
+    learningData.forEach((record, index) => {
+        if (record._nodeBounds) {
+            const bounds = record._nodeBounds;
+            if (mouseX >= bounds.x && mouseX <= bounds.x + bounds.width &&
+                mouseY >= bounds.y && mouseY <= bounds.y + bounds.height) {
+                selectedNode = record;
+                updatePathInfo();
+                return;
+            }
+        }
+    });
+}
+
+// 缩放控制
+function zoomIn() {
+    pathScale = Math.min(3, pathScale * 1.2);
+    drawPath();
+}
+
+function zoomOut() {
+    pathScale = Math.max(0.5, pathScale / 1.2);
+    drawPath();
+}
+
+function resetView() {
+    pathScale = 1;
+    pathOffsetX = 0;
+    pathOffsetY = 0;
+    selectedNode = null;
+    hoveredNode = null;
+    hideNodeTooltip();
+    isCurvedPath = false;
+    toggleCurveBtn.textContent = '🔄 切换弯曲';
+    drawPath();
+    updatePathInfo();
+}
+
+// 更新路径信息
+function updatePathInfo() {
+    if (selectedNode) {
+        const time = new Date(selectedNode.timestamp).toLocaleString();
+        pathSummary.innerHTML = `
+            <strong>操作 ${learningData.indexOf(selectedNode) + 1}</strong><br>
+            类型: ${getTypeText(selectedNode.type)}<br>
+            描述: ${selectedNode.description}<br>
+            时间: ${time}<br>
+            XPath: ${truncateText(selectedNode.element.xpath, 50)}<br>
+            Selector: ${truncateText(selectedNode.element.selector, 50)}
+        `;
+    } else {
+        pathSummary.innerHTML = `
+            <strong>路径总览</strong><br>
+            总操作数: ${learningData.length}<br>
+            操作类型: ${getUniqueTypes().join(', ')}<br>
+            时间范围: ${getTimeRange()}<br>
+            点击节点查看详细信息
+        `;
+    }
+}
+
+// 获取唯一操作类型
+function getUniqueTypes() {
+    const types = [...new Set(learningData.map(record => getTypeText(record.type)))];
+    return types;
+}
+
+// 获取时间范围
+function getTimeRange() {
+    if (learningData.length === 0) return '无数据';
+    
+    const firstTime = new Date(learningData[0].timestamp);
+    const lastTime = new Date(learningData[learningData.length - 1].timestamp);
+    
+    const duration = Math.round((lastTime - firstTime) / 1000);
+    return `${firstTime.toLocaleTimeString()} - ${lastTime.toLocaleTimeString()} (${duration}秒)`;
+}
+
+// 弯曲路径切换
+function toggleCurvePath() {
+    isCurvedPath = !isCurvedPath;
+    toggleCurveBtn.textContent = isCurvedPath ? '📏 切换直线' : '🔄 切换弯曲';
+    drawPath();
+}
+
+// 显示节点tooltip
+function showNodeTooltip(e, node) {
+    const rect = pathCanvas.getBoundingClientRect();
+    const tooltipX = e.clientX - rect.left + 15;
+    const tooltipY = e.clientY - rect.top - 10;
+    
+    const time = new Date(node.timestamp).toLocaleString();
+    const index = learningData.indexOf(node) + 1;
+    
+    nodeTooltip.innerHTML = `
+        <h5>操作 ${index}</h5>
+        <p><span class="tooltip-label">类型:</span> <span class="tooltip-value">${getTypeText(node.type)}</span></p>
+        <p><span class="tooltip-label">描述:</span> <span class="tooltip-value">${node.description}</span></p>
+        <p><span class="tooltip-label">时间:</span> <span class="tooltip-value">${time}</span></p>
+        <p><span class="tooltip-label">URL:</span> <span class="tooltip-value">${node.url || '未知'}</span></p>
+        <p><span class="tooltip-label">XPath:</span> <span class="tooltip-value">${node.element.xpath}</span></p>
+        <p><span class="tooltip-label">Selector:</span> <span class="tooltip-value">${node.element.selector}</span></p>
+    `;
+    
+    nodeTooltip.style.left = tooltipX + 'px';
+    nodeTooltip.style.top = tooltipY + 'px';
+    nodeTooltip.classList.add('show');
+    
+    // 清除之前的超时
+    if (tooltipTimeout) {
+        clearTimeout(tooltipTimeout);
+    }
+}
+
+// 隐藏节点tooltip
+function hideNodeTooltip() {
+    nodeTooltip.classList.remove('show');
+    if (tooltipTimeout) {
+        clearTimeout(tooltipTimeout);
+    }
+} 

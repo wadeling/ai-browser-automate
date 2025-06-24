@@ -56,6 +56,7 @@
             <div class="table-actions">
                 <button id="clearRecords" class="clear-btn">🗑️ 清空记录</button>
                 <button id="exportRecords" class="export-btn">📤 导出数据</button>
+                <button id="viewPath" class="path-btn">🔄 查看操作路径</button>
             </div>
         </div>
         
@@ -67,6 +68,33 @@
                 <li>学习模式开启后，插件会自动记录您的点击、输入等操作</li>
                 <li>每次操作都会记录XPath和CSS Selector，方便后续自动化</li>
             </ul>
+        </div>
+    </div>
+    
+    <!-- 路径可视化模态框 -->
+    <div id="pathModal" class="path-modal">
+        <div class="path-modal-content">
+            <div class="path-modal-header">
+                <h3 class="path-modal-title">🔄 操作路径可视化</h3>
+                <button class="path-modal-close" id="closePathModal">&times;</button>
+            </div>
+            
+            <div class="path-controls">
+                <button class="path-control-btn zoom-in" id="zoomIn">🔍+ 放大</button>
+                <button class="path-control-btn zoom-out" id="zoomOut">🔍- 缩小</button>
+                <button class="path-control-btn reset" id="resetView">🔄 重置视图</button>
+                <button class="path-control-btn toggle-curve" id="toggleCurve">🔄 切换弯曲</button>
+            </div>
+            
+            <div class="path-canvas-container">
+                <canvas id="pathCanvas" class="path-canvas"></canvas>
+                <div id="nodeTooltip" class="node-tooltip"></div>
+            </div>
+            
+            <div class="path-info" id="pathInfo">
+                <h4>📊 路径信息</h4>
+                <p id="pathSummary">点击节点查看详细信息</p>
+            </div>
         </div>
     </div>
     
