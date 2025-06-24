@@ -146,10 +146,10 @@ class ReplayEngine:
             console=self.console
         ) as progress:
             
-            task = progress.add_task("执行重放操作...", total=len(records))
+            task = progress.add_task("执行重放操作...\r\n", total=len(records))
             
             for i, record in enumerate(records):
-                progress.update(task, description=f"执行操作 {i+1}/{len(records)}: {record.description}")
+                progress.update(task, description=f"执行操作 {i+1}/{len(records)}: {record.description}\r\n")
                 
                 # 检查是否需要导航
                 if i > 0 and record.url != records[i-1].url:

@@ -315,6 +315,123 @@
                         <button class="export-performance-btn">📊 导出报告</button>
                     </div>
                 `;
+            } else if (title === '📊 数据报表') {
+                // 生成随机告警数据
+                const generateAlertData = () => {
+                    const hostNames = [
+                        'Web服务器-01', '数据库服务器-02', '应用服务器-03', '文件服务器-04', 
+                        '邮件服务器-05', 'DNS服务器-06', '负载均衡器-07', '缓存服务器-08',
+                        '监控服务器-09', '备份服务器-10', '开发服务器-11', '测试服务器-12',
+                        '生产服务器-13', '存储服务器-14', '网关服务器-15', '代理服务器-16',
+                        '日志服务器-17', '认证服务器-18', 'API服务器-19', '消息队列服务器-20'
+                    ];
+                    
+                    const managers = ['张三', '李四', '王五', '赵六', '钱七', '孙八', '周九', '吴十'];
+                    
+                    // 随机生成5-20条数据
+                    const dataCount = Math.floor(Math.random() * 16) + 5; // 5-20条
+                    const data = [];
+                    
+                    for (let i = 0; i < dataCount; i++) {
+                        data.push({
+                            hostName: hostNames[Math.floor(Math.random() * hostNames.length)],
+                            mediumAlerts: Math.floor(Math.random() * 10), // 0-9个中危告警
+                            highAlerts: Math.floor(Math.random() * 5),    // 0-4个高危告警
+                            lowAlerts: Math.floor(Math.random() * 15),    // 0-14个低危告警
+                            manager: managers[Math.floor(Math.random() * managers.length)]
+                        });
+                    }
+                    
+                    return data;
+                };
+                
+                // 初始化数据
+                window.alertData = generateAlertData();
+                window.currentPage = 1;
+                window.pageSize = 5;
+                
+                const renderAlertTable = () => {
+                    const startIndex = (window.currentPage - 1) * window.pageSize;
+                    const endIndex = startIndex + window.pageSize;
+                    const pageData = window.alertData.slice(startIndex, endIndex);
+                    const totalPages = Math.ceil(window.alertData.length / window.pageSize);
+                    
+                    let tableRows = '';
+                    pageData.forEach((item, index) => {
+                        const rowIndex = startIndex + index + 1;
+                        tableRows += `
+                            <tr>
+                                <td>${rowIndex}</td>
+                                <td>${item.hostName}</td>
+                                <td><span class="alert-count medium">${item.mediumAlerts}</span></td>
+                                <td><span class="alert-count high">${item.highAlerts}</span></td>
+                                <td><span class="alert-count low">${item.lowAlerts}</span></td>
+                                <td>${item.manager}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    let paginationButtons = '';
+                    if (totalPages > 1) {
+                        // 上一页按钮
+                        if (window.currentPage > 1) {
+                            paginationButtons += `<button class="page-btn" onclick="changePage(${window.currentPage - 1})">上一页</button>`;
+                        }
+                        
+                        // 页码按钮
+                        for (let i = 1; i <= totalPages; i++) {
+                            if (i === window.currentPage) {
+                                paginationButtons += `<button class="page-btn active">${i}</button>`;
+                            } else {
+                                paginationButtons += `<button class="page-btn" onclick="changePage(${i})">${i}</button>`;
+                            }
+                        }
+                        
+                        // 下一页按钮
+                        if (window.currentPage < totalPages) {
+                            paginationButtons += `<button class="page-btn" onclick="changePage(${window.currentPage + 1})">下一页</button>`;
+                        }
+                    }
+                    
+                    return `
+                        <p>${content}</p>
+                        
+                        <h3>🚨 主机告警统计报表</h3>
+                        <div class="table-info">
+                            <span>共 ${window.alertData.length} 条记录，每页显示 ${window.pageSize} 条</span>
+                            <button class="refresh-btn" onclick="refreshAlertData()">🔄 刷新数据</button>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table class="alert-table">
+                                <thead>
+                                    <tr>
+                                        <th>序号</th>
+                                        <th>主机名称</th>
+                                        <th>中危告警</th>
+                                        <th>高危告警</th>
+                                        <th>低危告警</th>
+                                        <th>负责人</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tableRows}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="pagination">
+                            ${paginationButtons}
+                        </div>
+                        
+                        <div class="table-actions">
+                            <button class="export-btn">📤 导出报表</button>
+                            <button class="print-btn">🖨️ 打印报表</button>
+                        </div>
+                    `;
+                };
+                
+                detailContent.innerHTML = renderAlertTable();
             } else {
                 // 其他功能显示原有内容
                 detailContent.innerHTML = `
@@ -361,6 +478,102 @@
             const performanceData = generatePerformanceData();
             // 这里可以添加数据更新逻辑
             alert('数据已刷新！');
+        }
+
+        // 分页功能
+        function changePage(page) {
+            window.currentPage = page;
+            const detailContent = document.getElementById('detailContent');
+            const detailTitle = document.querySelector('.detail-title');
+            
+            if (detailTitle.textContent === '📊 数据报表') {
+                // 重新渲染表格，但不重新生成数据
+                const renderAlertTable = () => {
+                    const startIndex = (window.currentPage - 1) * window.pageSize;
+                    const endIndex = startIndex + window.pageSize;
+                    const pageData = window.alertData.slice(startIndex, endIndex);
+                    const totalPages = Math.ceil(window.alertData.length / window.pageSize);
+                    
+                    let tableRows = '';
+                    pageData.forEach((item, index) => {
+                        const rowIndex = startIndex + index + 1;
+                        tableRows += `
+                            <tr>
+                                <td>${rowIndex}</td>
+                                <td>${item.hostName}</td>
+                                <td><span class="alert-count medium">${item.mediumAlerts}</span></td>
+                                <td><span class="alert-count high">${item.highAlerts}</span></td>
+                                <td><span class="alert-count low">${item.lowAlerts}</span></td>
+                                <td>${item.manager}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    let paginationButtons = '';
+                    if (totalPages > 1) {
+                        if (window.currentPage > 1) {
+                            paginationButtons += `<button class="page-btn" onclick="changePage(${window.currentPage - 1})">上一页</button>`;
+                        }
+                        
+                        for (let i = 1; i <= totalPages; i++) {
+                            if (i === window.currentPage) {
+                                paginationButtons += `<button class="page-btn active">${i}</button>`;
+                            } else {
+                                paginationButtons += `<button class="page-btn" onclick="changePage(${i})">${i}</button>`;
+                            }
+                        }
+                        
+                        if (window.currentPage < totalPages) {
+                            paginationButtons += `<button class="page-btn" onclick="changePage(${window.currentPage + 1})">下一页</button>`;
+                        }
+                    }
+                    
+                    return `
+                        <p>生成各类数据报表，支持图表展示。</p>
+                        
+                        <h3>🚨 主机告警统计报表</h3>
+                        <div class="table-info">
+                            <span>共 ${window.alertData.length} 条记录，每页显示 ${window.pageSize} 条</span>
+                            <button class="refresh-btn" onclick="refreshAlertData()">🔄 刷新数据</button>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table class="alert-table">
+                                <thead>
+                                    <tr>
+                                        <th>序号</th>
+                                        <th>主机名称</th>
+                                        <th>中危告警</th>
+                                        <th>高危告警</th>
+                                        <th>低危告警</th>
+                                        <th>负责人</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tableRows}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="pagination">
+                            ${paginationButtons}
+                        </div>
+                        
+                        <div class="table-actions">
+                            <button class="export-btn">📤 导出报表</button>
+                            <button class="print-btn">🖨️ 打印报表</button>
+                        </div>
+                    `;
+                };
+                
+                detailContent.innerHTML = renderAlertTable();
+            }
+        }
+
+        // 刷新告警数据
+        function refreshAlertData() {
+            // 重新生成数据并显示
+            showDetail('📊 数据报表', '生成各类数据报表，支持图表展示。');
         }
 
         document.addEventListener('click', function(event) {
