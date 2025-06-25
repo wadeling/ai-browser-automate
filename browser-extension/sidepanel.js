@@ -3,6 +3,34 @@ let isLearningMode = false;
 let learningData = [];
 let recordCount = 0;
 
+// 路径可视化相关变量
+let pathCanvasCtx = null;
+let pathScale = 1;
+let pathOffsetX = 0;
+let pathOffsetY = 0;
+let isDragging = false;
+let lastMouseX = 0;
+let lastMouseY = 0;
+let selectedNode = null;
+let hoveredNode = null;
+let isCurvedPath = false;
+let tooltipTimeout = null;
+
+// 节点配置
+const nodeConfig = {
+    radius: 25,
+    spacing: 200,
+    textMaxLength: 20,
+    textLineHeight: 15,
+    colors: {
+        click: '#28a745',
+        input: '#007bff',
+        change: '#ffc107',
+        submit: '#dc3545',
+        table: '#6f42c1'
+    }
+};
+
 // DOM元素
 const startBtn = document.getElementById('startLearning');
 const stopBtn = document.getElementById('stopLearning');
@@ -374,32 +402,65 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 
 // ==================== 路径可视化功能 ====================
 
-// 路径可视化状态
-let pathCanvasCtx;
-let pathScale = 1;
-let pathOffsetX = 0;
-let pathOffsetY = 0;
-let isDragging = false;
-let lastMouseX = 0;
-let lastMouseY = 0;
-let selectedNode = null;
-let isCurvedPath = false;
-let hoveredNode = null;
-let tooltipTimeout = null;
-
-// 节点配置
-const nodeConfig = {
-    radius: 30,
-    colors: {
-        click: '#28a745',
-        input: '#007bff',
-        change: '#ffc107',
-        submit: '#dc3545'
-    },
-    spacing: 150,
-    textMaxLength: 20,
-    textLineHeight: 16
-};
+// 处理学习记录聚合
+function aggregateLearningData() {
+    const aggregatedData = [];
+    let currentGroup = null;
+    
+    learningData.forEach((record, index) => {
+        const isTableElement = record.element.table;
+        
+        if (isTableElement) {
+            // 检查是否与当前组是同一个table
+            if (currentGroup && 
+                currentGroup.tableId === record.element.table.xpath) {
+                // 添加到当前组
+                currentGroup.records.push(record);
+                currentGroup.count++;
+            } else {
+                // 保存当前组（如果存在）
+                if (currentGroup) {
+                    aggregatedData.push(currentGroup);
+                }
+                
+                // 创建新组
+                currentGroup = {
+                    type: 'table',
+                    records: [record],
+                    count: 1,
+                    tableId: record.element.table.xpath,
+                    tableInfo: record.element.table,
+                    timestamp: record.timestamp,
+                    description: `表格操作 (${record.element.table.caption || '未命名表格'})`,
+                    url: record.url
+                };
+            }
+        } else {
+            // 非table元素，保存当前组（如果存在）
+            if (currentGroup) {
+                aggregatedData.push(currentGroup);
+                currentGroup = null;
+            }
+            
+            // 添加非table记录
+            aggregatedData.push({
+                type: 'single',
+                record: record,
+                count: 1,
+                timestamp: record.timestamp,
+                description: record.description,
+                url: record.url
+            });
+        }
+    });
+    
+    // 保存最后一个组
+    if (currentGroup) {
+        aggregatedData.push(currentGroup);
+    }
+    
+    return aggregatedData;
+}
 
 // 显示路径可视化
 function showPathVisualization() {
@@ -472,29 +533,39 @@ function drawPath() {
     ctx.translate(pathOffsetX, pathOffsetY);
     ctx.scale(pathScale, pathScale);
     
+    // 获取聚合数据
+    const aggregatedData = aggregateLearningData();
+    
     // 计算节点位置
-    const positions = calculateNodePositions(canvas);
+    const positions = calculateNodePositions(canvas, aggregatedData);
     
     // 绘制连接线
-    for (let i = 1; i < learningData.length; i++) {
+    for (let i = 1; i < aggregatedData.length; i++) {
         const prevPos = positions[i - 1];
         const currPos = positions[i];
         drawConnectionLine(prevPos.x, prevPos.y, currPos.x, currPos.y);
     }
     
-    // 绘制节点
-    learningData.forEach((record, index) => {
+    // 绘制节点并更新边界信息
+    aggregatedData.forEach((item, index) => {
         const pos = positions[index];
-        drawNode(pos.x, pos.y, record, index);
+        if (item.type === 'table') {
+            drawTableNode(pos.x, pos.y, item, index);
+        } else {
+            drawSingleNode(pos.x, pos.y, item, index);
+        }
     });
     
     ctx.restore();
+    
+    // 重新绑定聚合数据到全局变量，供事件处理使用
+    window.currentAggregatedData = aggregatedData;
 }
 
 // 计算节点位置
-function calculateNodePositions(canvas) {
+function calculateNodePositions(canvas, aggregatedData) {
     const positions = [];
-    const totalNodes = learningData.length;
+    const totalNodes = aggregatedData.length;
     
     if (isCurvedPath && totalNodes > 3) {
         // 弯曲路径：使用蛇形布局
@@ -525,9 +596,62 @@ function calculateNodePositions(canvas) {
     return positions;
 }
 
-// 绘制节点
-function drawNode(x, y, record, index) {
+// 绘制table节点
+function drawTableNode(x, y, tableItem, index) {
     const ctx = pathCanvasCtx;
+    const color = nodeConfig.colors.table;
+    
+    // 绘制table节点圆圈（稍大一些）
+    const radius = nodeConfig.radius + 5;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    // 绘制table图标
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('📊', x, y - 5);
+    
+    // 绘制操作数量
+    ctx.font = 'bold 12px Arial';
+    ctx.fillText(tableItem.count, x, y + 10);
+    
+    // 绘制table描述
+    ctx.fillStyle = '#333';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('表格操作', x, y + radius + 15);
+    
+    // 绘制table名称
+    const tableName = tableItem.tableInfo.caption || '未命名表格';
+    const lines = wrapText(tableName, nodeConfig.textMaxLength);
+    lines.forEach((line, lineIndex) => {
+        const lineY = y + radius + 30 + lineIndex * nodeConfig.textLineHeight;
+        ctx.fillText(line, x, lineY);
+    });
+    
+    // 存储节点信息用于点击和hover检测
+    const textHeight = lines.length * nodeConfig.textLineHeight;
+    tableItem._nodeBounds = {
+        x: x - radius,
+        y: y - radius,
+        width: radius * 2,
+        height: radius * 2 + 50 + textHeight,
+        centerX: x,
+        centerY: y
+    };
+}
+
+// 绘制单个操作节点
+function drawSingleNode(x, y, singleItem, index) {
+    const ctx = pathCanvasCtx;
+    const record = singleItem.record;
     const color = nodeConfig.colors[record.type] || '#6c757d';
     
     // 绘制节点圆圈
@@ -564,7 +688,7 @@ function drawNode(x, y, record, index) {
     
     // 存储节点信息用于点击和hover检测
     const textHeight = textContent ? (wrapText(textContent, nodeConfig.textMaxLength).length * nodeConfig.textLineHeight) : 0;
-    record._nodeBounds = {
+    singleItem._nodeBounds = {
         x: x - nodeConfig.radius,
         y: y - nodeConfig.radius,
         width: nodeConfig.radius * 2,
@@ -721,13 +845,16 @@ function handleMouseMove(e) {
     const mouseX = (e.clientX - rect.left - pathOffsetX) / pathScale;
     const mouseY = (e.clientY - rect.top - pathOffsetY) / pathScale;
     
+    // 使用全局聚合数据
+    const aggregatedData = window.currentAggregatedData || aggregateLearningData();
+    
     let foundNode = null;
-    learningData.forEach((record, index) => {
-        if (record._nodeBounds) {
-            const bounds = record._nodeBounds;
+    aggregatedData.forEach((item, index) => {
+        if (item._nodeBounds) {
+            const bounds = item._nodeBounds;
             if (mouseX >= bounds.x && mouseX <= bounds.x + bounds.width &&
                 mouseY >= bounds.y && mouseY <= bounds.y + bounds.height) {
-                foundNode = record;
+                foundNode = item;
                 return;
             }
         }
@@ -786,13 +913,16 @@ function handleNodeClick(e) {
     const mouseX = (e.clientX - rect.left - pathOffsetX) / pathScale;
     const mouseY = (e.clientY - rect.top - pathOffsetY) / pathScale;
     
+    // 使用全局聚合数据
+    const aggregatedData = window.currentAggregatedData || aggregateLearningData();
+    
     // 检查点击了哪个节点
-    learningData.forEach((record, index) => {
-        if (record._nodeBounds) {
-            const bounds = record._nodeBounds;
+    aggregatedData.forEach((item, index) => {
+        if (item._nodeBounds) {
+            const bounds = item._nodeBounds;
             if (mouseX >= bounds.x && mouseX <= bounds.x + bounds.width &&
                 mouseY >= bounds.y && mouseY <= bounds.y + bounds.height) {
-                selectedNode = record;
+                selectedNode = item;
                 updatePathInfo();
                 return;
             }
@@ -827,27 +957,52 @@ function resetView() {
 // 更新路径信息
 function updatePathInfo() {
     if (selectedNode) {
-        const time = new Date(selectedNode.timestamp).toLocaleString();
-        let tableInfo = '';
-        if (selectedNode.element.table) {
-            const table = selectedNode.element.table;
-            const position = table.elementPosition;
-            tableInfo = `<br>Table位置: 第${position.row}行第${position.column}列<br>Table描述: ${table.caption || '无'}`;
+        const aggregatedData = window.currentAggregatedData || aggregateLearningData();
+        const index = aggregatedData.indexOf(selectedNode) + 1;
+        
+        if (selectedNode.type === 'table') {
+            // Table节点的信息
+            const time = new Date(selectedNode.timestamp).toLocaleString();
+            pathSummary.innerHTML = `
+                <strong>📊 表格操作 ${index}</strong><br>
+                表格名称: ${selectedNode.tableInfo.caption || '未命名表格'}<br>
+                操作数量: ${selectedNode.count} 个操作<br>
+                表格大小: ${selectedNode.tableInfo.rows}行 ${selectedNode.tableInfo.cells}个单元格<br>
+                时间: ${time}<br>
+                Table XPath: ${truncateText(selectedNode.tableInfo.xpath, 50)}<br>
+                Table Selector: ${truncateText(selectedNode.tableInfo.selector, 50)}
+            `;
+        } else {
+            // 单个操作节点的信息
+            const record = selectedNode.record;
+            const time = new Date(record.timestamp).toLocaleString();
+            let tableInfo = '';
+            if (record.element.table) {
+                const table = record.element.table;
+                const position = table.elementPosition;
+                tableInfo = `<br>Table位置: 第${position.row}行第${position.column}列<br>Table描述: ${table.caption || '无'}`;
+            }
+            
+            pathSummary.innerHTML = `
+                <strong>操作 ${index}</strong><br>
+                类型: ${getTypeText(record.type)}<br>
+                描述: ${record.description}<br>
+                时间: ${time}<br>
+                XPath: ${truncateText(record.element.xpath, 50)}<br>
+                Selector: ${truncateText(record.element.selector, 50)}${tableInfo}
+            `;
         }
+    } else {
+        // 路径总览
+        const aggregatedData = window.currentAggregatedData || aggregateLearningData();
+        const tableNodes = aggregatedData.filter(item => item.type === 'table');
+        const singleNodes = aggregatedData.filter(item => item.type === 'single');
         
         pathSummary.innerHTML = `
-            <strong>操作 ${learningData.indexOf(selectedNode) + 1}</strong><br>
-            类型: ${getTypeText(selectedNode.type)}<br>
-            描述: ${selectedNode.description}<br>
-            时间: ${time}<br>
-            XPath: ${truncateText(selectedNode.element.xpath, 50)}<br>
-            Selector: ${truncateText(selectedNode.element.selector, 50)}${tableInfo}
-        `;
-    } else {
-        pathSummary.innerHTML = `
             <strong>路径总览</strong><br>
-            总操作数: ${learningData.length}<br>
-            操作类型: ${getUniqueTypes().join(', ')}<br>
+            总节点数: ${aggregatedData.length}<br>
+            表格操作: ${tableNodes.length} 个<br>
+            单个操作: ${singleNodes.length} 个<br>
             时间范围: ${getTimeRange()}<br>
             点击节点查看详细信息
         `;
@@ -864,8 +1019,11 @@ function getUniqueTypes() {
 function getTimeRange() {
     if (learningData.length === 0) return '无数据';
     
-    const firstTime = new Date(learningData[0].timestamp);
-    const lastTime = new Date(learningData[learningData.length - 1].timestamp);
+    const aggregatedData = aggregateLearningData();
+    if (aggregatedData.length === 0) return '无数据';
+    
+    const firstTime = new Date(aggregatedData[0].timestamp);
+    const lastTime = new Date(aggregatedData[aggregatedData.length - 1].timestamp);
     
     const duration = Math.round((lastTime - firstTime) / 1000);
     return `${firstTime.toLocaleTimeString()} - ${lastTime.toLocaleTimeString()} (${duration}秒)`;
@@ -884,34 +1042,71 @@ function showNodeTooltip(e, node) {
     const tooltipX = e.clientX - rect.left + 15;
     const tooltipY = e.clientY - rect.top - 10;
     
-    const time = new Date(node.timestamp).toLocaleString();
-    const index = learningData.indexOf(node) + 1;
+    // 使用全局聚合数据以计算索引
+    const aggregatedData = window.currentAggregatedData || aggregateLearningData();
+    const index = aggregatedData.indexOf(node) + 1;
     
-    // 处理table信息
-    let tableInfo = '';
-    if (node.element.table) {
-        const table = node.element.table;
-        const position = table.elementPosition;
-        tableInfo = `
-            <p><span class="tooltip-label">Table位置:</span> <span class="tooltip-value">第${position.row}行第${position.column}列</span></p>
-            <p><span class="tooltip-label">Table描述:</span> <span class="tooltip-value">${table.caption || '无'}</span></p>
-            <p><span class="tooltip-label">Table大小:</span> <span class="tooltip-value">${table.rows}行 ${table.cells}个单元格</span></p>
-            <p><span class="tooltip-label">Table XPath:</span> <span class="tooltip-value">${truncateText(table.xpath, 60)}</span></p>
-            <p><span class="tooltip-label">Table Selector:</span> <span class="tooltip-value">${truncateText(table.selector, 60)}</span></p>
+    let tooltipContent = '';
+    
+    if (node.type === 'table') {
+        // Table节点的tooltip
+        const time = new Date(node.timestamp).toLocaleString();
+        tooltipContent = `
+            <h5>📊 表格操作 ${index}</h5>
+            <p><span class="tooltip-label">表格名称:</span> <span class="tooltip-value">${node.tableInfo.caption || '未命名表格'}</span></p>
+            <p><span class="tooltip-label">操作数量:</span> <span class="tooltip-value">${node.count} 个操作</span></p>
+            <p><span class="tooltip-label">表格大小:</span> <span class="tooltip-value">${node.tableInfo.rows}行 ${node.tableInfo.cells}个单元格</span></p>
+            <p><span class="tooltip-label">时间:</span> <span class="tooltip-value">${time}</span></p>
+            <p><span class="tooltip-label">Table XPath:</span> <span class="tooltip-value">${truncateText(node.tableInfo.xpath, 60)}</span></p>
+            <p><span class="tooltip-label">Table Selector:</span> <span class="tooltip-value">${truncateText(node.tableInfo.selector, 60)}</span></p>
+            <hr style="margin: 8px 0; border: none; border-top: 1px solid #555;">
+            <h6 style="margin: 8px 0; color: #20c997;">📋 包含的操作:</h6>
+        `;
+        
+        // 添加所有table操作
+        node.records.forEach((record, recordIndex) => {
+            const recordTime = new Date(record.timestamp).toLocaleTimeString();
+            const position = record.element.table.elementPosition;
+            tooltipContent += `
+                <p style="margin: 4px 0; padding-left: 10px; border-left: 2px solid #20c997;">
+                    <span class="tooltip-label">${recordIndex + 1}.</span> 
+                    <span class="tooltip-value">${getTypeText(record.type)}: ${record.description}</span><br>
+                    <span style="font-size: 11px; color: #aaa;">位置: 第${position.row}行第${position.column}列 | 时间: ${recordTime}</span>
+                </p>
+            `;
+        });
+    } else {
+        // 单个操作节点的tooltip
+        const record = node.record;
+        const time = new Date(record.timestamp).toLocaleString();
+        
+        // 处理table信息
+        let tableInfo = '';
+        if (record.element.table) {
+            const table = record.element.table;
+            const position = table.elementPosition;
+            tableInfo = `
+                <p><span class="tooltip-label">Table位置:</span> <span class="tooltip-value">第${position.row}行第${position.column}列</span></p>
+                <p><span class="tooltip-label">Table描述:</span> <span class="tooltip-value">${table.caption || '无'}</span></p>
+                <p><span class="tooltip-label">Table大小:</span> <span class="tooltip-value">${table.rows}行 ${table.cells}个单元格</span></p>
+                <p><span class="tooltip-label">Table XPath:</span> <span class="tooltip-value">${truncateText(table.xpath, 60)}</span></p>
+                <p><span class="tooltip-label">Table Selector:</span> <span class="tooltip-value">${truncateText(table.selector, 60)}</span></p>
+            `;
+        }
+        
+        tooltipContent = `
+            <h5>操作 ${index}</h5>
+            <p><span class="tooltip-label">类型:</span> <span class="tooltip-value">${getTypeText(record.type)}</span></p>
+            <p><span class="tooltip-label">描述:</span> <span class="tooltip-value">${record.description}</span></p>
+            <p><span class="tooltip-label">时间:</span> <span class="tooltip-value">${time}</span></p>
+            <p><span class="tooltip-label">URL:</span> <span class="tooltip-value">${record.url || '未知'}</span></p>
+            <p><span class="tooltip-label">XPath:</span> <span class="tooltip-value">${record.element.xpath}</span></p>
+            <p><span class="tooltip-label">Selector:</span> <span class="tooltip-value">${record.element.selector}</span></p>
+            ${tableInfo}
         `;
     }
     
-    nodeTooltip.innerHTML = `
-        <h5>操作 ${index}</h5>
-        <p><span class="tooltip-label">类型:</span> <span class="tooltip-value">${getTypeText(node.type)}</span></p>
-        <p><span class="tooltip-label">描述:</span> <span class="tooltip-value">${node.description}</span></p>
-        <p><span class="tooltip-label">时间:</span> <span class="tooltip-value">${time}</span></p>
-        <p><span class="tooltip-label">URL:</span> <span class="tooltip-value">${node.url || '未知'}</span></p>
-        <p><span class="tooltip-label">XPath:</span> <span class="tooltip-value">${node.element.xpath}</span></p>
-        <p><span class="tooltip-label">Selector:</span> <span class="tooltip-value">${node.element.selector}</span></p>
-        ${tableInfo}
-    `;
-    
+    nodeTooltip.innerHTML = tooltipContent;
     nodeTooltip.style.left = tooltipX + 'px';
     nodeTooltip.style.top = tooltipY + 'px';
     nodeTooltip.classList.add('show');
