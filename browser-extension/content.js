@@ -130,6 +130,9 @@ function handleClick(event) {
     const xpath = getXPath(target);
     const selector = getCssSelector(target);
     
+    // 获取table信息（如果元素在table中）
+    const tableInfo = getTableInfo(target);
+    
     // 记录点击操作
     const actionData = {
         type: 'click',
@@ -149,6 +152,11 @@ function handleClick(event) {
             y: event.clientY
         }
     };
+    
+    // 如果元素在table中，添加table信息
+    if (tableInfo) {
+        actionData.element.table = tableInfo;
+    }
     
     // 发送到background script
     chrome.runtime.sendMessage({
@@ -181,6 +189,9 @@ function handleInput(event) {
     const xpath = getXPath(target);
     const selector = getCssSelector(target);
     
+    // 获取table信息（如果元素在table中）
+    const tableInfo = getTableInfo(target);
+    
     // 记录输入操作
     const actionData = {
         type: 'input',
@@ -198,6 +209,11 @@ function handleInput(event) {
         timestamp: new Date().toISOString(),
         value: target.value?.substring(0, 100) // 限制长度
     };
+    
+    // 如果元素在table中，添加table信息
+    if (tableInfo) {
+        actionData.element.table = tableInfo;
+    }
     
     // 发送到background script
     chrome.runtime.sendMessage({
@@ -228,6 +244,9 @@ function handleChange(event) {
     const xpath = getXPath(target);
     const selector = getCssSelector(target);
     
+    // 获取table信息（如果元素在table中）
+    const tableInfo = getTableInfo(target);
+    
     // 记录选择操作
     const actionData = {
         type: 'change',
@@ -243,6 +262,11 @@ function handleChange(event) {
         timestamp: new Date().toISOString(),
         value: target.value
     };
+    
+    // 如果元素在table中，添加table信息
+    if (tableInfo) {
+        actionData.element.table = tableInfo;
+    }
     
     // 发送到background script
     chrome.runtime.sendMessage({
@@ -273,6 +297,9 @@ function handleSubmit(event) {
     const xpath = getXPath(target);
     const selector = getCssSelector(target);
     
+    // 获取table信息（如果元素在table中）
+    const tableInfo = getTableInfo(target);
+    
     // 记录提交操作
     const actionData = {
         type: 'submit',
@@ -288,6 +315,11 @@ function handleSubmit(event) {
         },
         timestamp: new Date().toISOString()
     };
+    
+    // 如果元素在table中，添加table信息
+    if (tableInfo) {
+        actionData.element.table = tableInfo;
+    }
     
     // 发送到background script
     chrome.runtime.sendMessage({
@@ -331,6 +363,99 @@ function getElementDescription(element) {
     }
     
     return element.tagName.toLowerCase();
+}
+
+// 获取元素所在的table信息
+function getTableInfo(element) {
+    // 查找元素所在的table（向上遍历DOM树）
+    let current = element;
+    let tableElement = null;
+    
+    while (current && current !== document.body) {
+        if (current.tagName === 'TABLE') {
+            tableElement = current;
+            break;
+        }
+        current = current.parentElement;
+    }
+    
+    if (!tableElement) {
+        return null;
+    }
+    
+    // 获取table的详细信息
+    const tableInfo = {
+        tagName: tableElement.tagName,
+        id: tableElement.id || '',
+        className: tableElement.className || '',
+        xpath: getXPath(tableElement),
+        selector: getCssSelector(tableElement),
+        rows: tableElement.rows ? tableElement.rows.length : 0,
+        cells: 0
+    };
+    
+    // 计算总单元格数
+    if (tableElement.rows) {
+        for (let i = 0; i < tableElement.rows.length; i++) {
+            tableInfo.cells += tableElement.rows[i].cells.length;
+        }
+    }
+    
+    // 获取table的caption或第一个th作为描述
+    const caption = tableElement.querySelector('caption');
+    if (caption && caption.textContent.trim()) {
+        tableInfo.caption = caption.textContent.trim();
+    } else {
+        const firstTh = tableElement.querySelector('th');
+        if (firstTh && firstTh.textContent.trim()) {
+            tableInfo.caption = firstTh.textContent.trim().substring(0, 50);
+        }
+    }
+    
+    // 获取元素在table中的位置信息
+    const positionInfo = getElementPositionInTable(element, tableElement);
+    if (positionInfo) {
+        tableInfo.elementPosition = positionInfo;
+    }
+    
+    return tableInfo;
+}
+
+// 获取元素在table中的位置信息
+function getElementPositionInTable(element, tableElement) {
+    let current = element;
+    let rowIndex = -1;
+    let cellIndex = -1;
+    
+    // 查找元素所在的行
+    while (current && current !== tableElement) {
+        if (current.tagName === 'TR') {
+            rowIndex = Array.from(tableElement.rows).indexOf(current);
+            break;
+        }
+        current = current.parentElement;
+    }
+    
+    if (rowIndex === -1) return null;
+    
+    // 查找元素所在的单元格
+    const row = tableElement.rows[rowIndex];
+    for (let i = 0; i < row.cells.length; i++) {
+        const cell = row.cells[i];
+        if (cell.contains(element) || cell === element) {
+            cellIndex = i;
+            break;
+        }
+    }
+    
+    if (cellIndex === -1) return null;
+    
+    return {
+        row: rowIndex + 1, // 从1开始计数
+        column: cellIndex + 1, // 从1开始计数
+        rowIndex: rowIndex,
+        cellIndex: cellIndex
+    };
 }
 
 // 获取元素的XPath（类似Chrome开发者工具的Copy full XPath）

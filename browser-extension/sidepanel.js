@@ -157,12 +157,26 @@ function addRecordToTable(record) {
     const typeClass = `record-type ${record.type}`;
     const typeText = getTypeText(record.type);
     
+    // 处理table信息
+    let tableInfo = '';
+    if (record.element.table) {
+        const table = record.element.table;
+        const position = table.elementPosition;
+        if (position) {
+            tableInfo = `第${position.row}行第${position.column}列`;
+        }
+        if (table.caption) {
+            tableInfo += ` (${table.caption})`;
+        }
+    }
+    
     row.innerHTML = `
         <td>${++recordCount}</td>
         <td><span class="${typeClass}">${typeText}</span></td>
         <td title="${record.description}">${truncateText(record.description, 30)}</td>
         <td title="${record.element.xpath}">${truncateText(record.element.xpath, 25)}</td>
         <td title="${record.element.selector}">${truncateText(record.element.selector, 25)}</td>
+        <td title="${tableInfo || '不在表格中'}">${truncateText(tableInfo || '无', 20)}</td>
         <td>${time}</td>
     `;
     
@@ -814,13 +828,20 @@ function resetView() {
 function updatePathInfo() {
     if (selectedNode) {
         const time = new Date(selectedNode.timestamp).toLocaleString();
+        let tableInfo = '';
+        if (selectedNode.element.table) {
+            const table = selectedNode.element.table;
+            const position = table.elementPosition;
+            tableInfo = `<br>Table位置: 第${position.row}行第${position.column}列<br>Table描述: ${table.caption || '无'}`;
+        }
+        
         pathSummary.innerHTML = `
             <strong>操作 ${learningData.indexOf(selectedNode) + 1}</strong><br>
             类型: ${getTypeText(selectedNode.type)}<br>
             描述: ${selectedNode.description}<br>
             时间: ${time}<br>
             XPath: ${truncateText(selectedNode.element.xpath, 50)}<br>
-            Selector: ${truncateText(selectedNode.element.selector, 50)}
+            Selector: ${truncateText(selectedNode.element.selector, 50)}${tableInfo}
         `;
     } else {
         pathSummary.innerHTML = `
@@ -866,6 +887,20 @@ function showNodeTooltip(e, node) {
     const time = new Date(node.timestamp).toLocaleString();
     const index = learningData.indexOf(node) + 1;
     
+    // 处理table信息
+    let tableInfo = '';
+    if (node.element.table) {
+        const table = node.element.table;
+        const position = table.elementPosition;
+        tableInfo = `
+            <p><span class="tooltip-label">Table位置:</span> <span class="tooltip-value">第${position.row}行第${position.column}列</span></p>
+            <p><span class="tooltip-label">Table描述:</span> <span class="tooltip-value">${table.caption || '无'}</span></p>
+            <p><span class="tooltip-label">Table大小:</span> <span class="tooltip-value">${table.rows}行 ${table.cells}个单元格</span></p>
+            <p><span class="tooltip-label">Table XPath:</span> <span class="tooltip-value">${truncateText(table.xpath, 60)}</span></p>
+            <p><span class="tooltip-label">Table Selector:</span> <span class="tooltip-value">${truncateText(table.selector, 60)}</span></p>
+        `;
+    }
+    
     nodeTooltip.innerHTML = `
         <h5>操作 ${index}</h5>
         <p><span class="tooltip-label">类型:</span> <span class="tooltip-value">${getTypeText(node.type)}</span></p>
@@ -874,6 +909,7 @@ function showNodeTooltip(e, node) {
         <p><span class="tooltip-label">URL:</span> <span class="tooltip-value">${node.url || '未知'}</span></p>
         <p><span class="tooltip-label">XPath:</span> <span class="tooltip-value">${node.element.xpath}</span></p>
         <p><span class="tooltip-label">Selector:</span> <span class="tooltip-value">${node.element.selector}</span></p>
+        ${tableInfo}
     `;
     
     nodeTooltip.style.left = tooltipX + 'px';
